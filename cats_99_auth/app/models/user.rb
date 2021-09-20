@@ -3,6 +3,15 @@ class User < ApplicationRecord
   validates :password_digest, presence: true
   validates :password, length: { minimum: 6, allow_nil: true }
 
+  before_validation :ensure_session_token
+
+  has_many :cats,
+    foreign_key: :user_id,
+    class_name: :Cat
+
+  has_many :requests,
+    foreign_key: :user_id,
+    class_name: :CatRentalRequest
 
   attr_reader :password
 
@@ -19,5 +28,19 @@ class User < ApplicationRecord
   def reset_session_token!
     self.session_token = SecureRandom::urlsafe_base64
     self.save!
+    self.session_token
+  end
+
+  def self.find_by_credentials(username, password)
+    user = User.find_by(username: username)
+    if user && user.is_password?(password)
+      return user
+    else
+      nil
+    end
+  end
+
+  def ensure_session_token
+    self.session_token ||= SecureRandom::urlsafe_base64
   end
 end
